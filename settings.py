@@ -5,4 +5,4 @@ BOT_NAME = 'OrdersNotifyBot'
 
 DATABASE_URL = os.environ['DATABASE_URL']
 
-CHECK_INTERVAL = os.environ['NOTIFY_BOT_CHECK_INTERVAL']  # seconds
+CHECK_INTERVAL = int(os.environ['NOTIFY_BOT_CHECK_INTERVAL'])  # seconds
