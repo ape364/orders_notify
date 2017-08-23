@@ -45,10 +45,10 @@ async def subscribe(chat: Chat, match):
         await chat.send_text(f'Invalid format.')
         return
     if await db.is_subscribed(uid, exchange_api.api_id):
-        await chat.send_text(f'You are already subscribed to {api.name!r}.')
+        await chat.send_text(f'You are already subscribed to {exchange_name!r}.')
         return
     await db.subscribe(uid, exchange_api.api_id, api, secret)
-    await chat.send_text(f'You are subscribed to {exchange_api.name!r}.')
+    await chat.send_text(f'You are subscribed to {exchange_name!r}.')
 
 
 @bot.command(r'/unsub\s(\w+)')

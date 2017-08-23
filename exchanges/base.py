@@ -24,7 +24,7 @@ class BaseApi(ABC):
             return await resp.json()
 
     @staticmethod
-    async def get(self, url: str, headers: dict = None) -> dict:
+    async def get(url: str, headers: dict = None) -> dict:
         async with ClientSession() as s:
             resp = await s.get(url, headers=headers)
             return await resp.json()
