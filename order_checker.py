@@ -6,7 +6,7 @@ from aiotg import Bot
 import db
 import settings
 from exchanges import exchange_apis
-from exchanges.base import Order, state_text, State
+from exchanges.base import Order, state_text, State, BaseApi
 
 
 class OrderChecker:
@@ -31,7 +31,7 @@ class OrderChecker:
                         state = state_text[order.state]
                         getLogger().info(f'Order {order_id} of user {uid} at exchange {exchange_name!r} '
                                          f'with id {exchange_id} is {state}.')
-                        await self.send_message(uid, self.format_order(exchange_name, order))
+                        await self.send_message(uid, self.format_order(api, order))
                         await db.remove_order(uid, exchange_api.api_id, order_id)
 
                 # fetch new orders from api
@@ -58,9 +58,10 @@ class OrderChecker:
         await user_chat.send_text(order_info, parse_mode='Markdown')
 
     @staticmethod
-    def format_order(exchange_name: str, order: Order):
-        return f'*Exchange:* {exchange_name}\n' \
-               f'*Pair:* {order.pair}\n' \
+    def format_order(exchange_api: BaseApi, order: Order):
+        ticker_url = f'[{order.pair}]({exchange_api.get_ticker_url(order.pair)})'
+        return f'*Exchange:* {exchange_api.name}\n' \
+               f'*Pair:* {ticker_url}\n' \
                f'*Price:* {order.price:.8f}\n' \
                f'*Amount:* {order.amount:.8f}\n' \
                f'*State:* {state_text[order.state]}'

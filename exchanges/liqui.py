@@ -62,6 +62,10 @@ class LiquiApi(BaseApi):
     def order_state(order: dict) -> State:
         return State(order['status'])
 
+    def get_ticker_url(self, pair):
+        cur_from, cur_to = pair.split('-')
+        return f'https://liqui.io/#/exchange/{cur_from}_{cur_to}'
+
     async def _tapi(self, **params):
         attempt, delay = 1, 1
         while True:

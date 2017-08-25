@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import re
+from pprint import pprint
 from time import time
 from urllib.parse import urlencode
 
@@ -78,6 +79,9 @@ class BittrexApi(BaseApi):
             return State.CANCELED_PARTIALLY_FILLED
 
         raise NullOrderState(order)
+
+    def get_ticker_url(self, pair):
+        return f'https://bittrex.com/Market/Index?MarketName={pair}'
 
     def get_headers_url(self, method_url, **params):
         params.update({

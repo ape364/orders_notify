@@ -58,6 +58,10 @@ class BaseApi(ABC):
     def order_state(order: dict) -> State:
         '''Returns state of the api order.'''
 
+    @abstractmethod
+    def get_ticker_url(self, pair):
+        '''Returns exchange's ticker URL for provided pair.'''
+
     @classmethod
     def check_keys(cls, api: str, secret: str) -> bool:
         return cls.api_regex.match(api) and cls.secret_regex.match(secret)
