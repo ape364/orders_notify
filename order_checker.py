@@ -61,6 +61,6 @@ class OrderChecker:
     def format_order(exchange_name: str, order: Order):
         return f'*Exchange:* {exchange_name}\n' \
                f'*Pair:* {order.pair}\n' \
-               f'*Price:* {order.price}\n' \
-               f'*Amount:* {order.amount}\n' \
+               f'*Price:* {order.price:.8f}\n' \
+               f'*Amount:* {order.amount:.8f}\n' \
                f'*State:* {state_text[order.state]}'
