@@ -16,9 +16,9 @@ class State(Enum):
 
 state_text = {
     State.ACTIVE: 'active',
-    State.EXECUTED: 'executed',
-    State.CANCELED: 'canceled',
-    State.CANCELED_PARTIALLY_FILLED: 'canceled, partially filled',
+    State.EXECUTED: '✅ executed',
+    State.CANCELED: '🚫 canceled',
+    State.CANCELED_PARTIALLY_FILLED: '⚠️ canceled, partially filled',
 }
 
 
