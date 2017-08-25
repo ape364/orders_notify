@@ -65,8 +65,6 @@ class BittrexApi(BaseApi):
 
     @staticmethod
     def order_state(order: dict) -> State:
-        print('Order:')
-        print(order)
         is_open, canceled = order['Closed'] is None, order['CancelInitiated']
         qty, qty_remaining = order['Quantity'], order['QuantityRemaining']
 
