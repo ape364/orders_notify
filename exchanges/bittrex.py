@@ -1,7 +1,6 @@
 import hashlib
 import hmac
 import re
-from pprint import pprint
 from time import time
 from urllib.parse import urlencode
 
@@ -39,7 +38,7 @@ class BittrexApi(BaseApi):
                     order['OrderUuid'],
                     'sell' if order['OrderType'] == 'LIMIT_SELL' else 'buy',
                     order['Exchange'],
-                    order['Limit'],
+                    order['PricePerUnit'] or order['Limit'],
                     order['Quantity'],
                     self.order_state(order)
                 )
@@ -59,7 +58,7 @@ class BittrexApi(BaseApi):
             order['OrderUuid'],
             'sell' if order['Type'] == 'LIMIT_SELL' else 'buy',
             order['Exchange'],
-            order['Limit'],
+            order['PricePerUnit'] or order['Limit'],
             order['Quantity'],
             self.order_state(order)
         )
