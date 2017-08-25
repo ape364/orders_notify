@@ -1,9 +1,25 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
+from enum import Enum
 
 from aiohttp import ClientSession
 
-Order = namedtuple('Order', 'exchange_id order_id type pair price amount is_closed')
+Order = namedtuple('Order', 'exchange_id order_id type pair price amount state')
+
+
+class State(Enum):
+    ACTIVE = 0
+    EXECUTED = 1
+    CANCELED = 2
+    CANCELED_PARTIALLY_FILLED = 3
+
+
+state_text = {
+    State.ACTIVE: 'active',
+    State.EXECUTED: 'executed',
+    State.CANCELED: 'canceled',
+    State.CANCELED_PARTIALLY_FILLED: 'canceled, partially filled',
+}
 
 
 class BaseApi(ABC):
@@ -36,6 +52,11 @@ class BaseApi(ABC):
     @abstractmethod
     async def order_info(self, order_id: str) -> Order:
         '''Returns order info by order id.'''
+
+    @staticmethod
+    @abstractmethod
+    def order_state(order: dict) -> State:
+        '''Returns state of the api order.'''
 
     @classmethod
     def check_keys(cls, api: str, secret: str) -> bool:

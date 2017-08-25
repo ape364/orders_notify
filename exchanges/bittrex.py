@@ -4,11 +4,15 @@ import re
 from time import time
 from urllib.parse import urlencode
 
-from exchanges.base import BaseApi, Order
+from exchanges.base import BaseApi, Order, State
 from exchanges.exceptions import BaseExchangeException
 
 
 class BittrexApiException(BaseExchangeException):
+    pass
+
+
+class NullOrderState(BittrexApiException):
     pass
 
 
@@ -27,16 +31,16 @@ class BittrexApi(BaseApi):
             raise BittrexApiException(resp['message'])
         api_orders = resp['result']
         orders = []
-        for api_order in api_orders:
+        for order in api_orders:
             orders.append(
                 Order(
                     self.api_id,
-                    api_order['OrderUuid'],
-                    'sell' if api_order['OrderType'] == 'LIMIT_SELL' else 'buy',
-                    api_order['Exchange'],
-                    api_order['Limit'],
-                    api_order['Quantity'],
-                    api_order['Closed'] is not None
+                    order['OrderUuid'],
+                    'sell' if order['OrderType'] == 'LIMIT_SELL' else 'buy',
+                    order['Exchange'],
+                    order['Limit'],
+                    order['Quantity'],
+                    self.order_state(order)
                 )
             )
         return orders
@@ -48,16 +52,34 @@ class BittrexApi(BaseApi):
         resp = await self.get(url, headers)
         if not resp['success']:
             raise BittrexApiException(resp['message'])
-        api_order = resp['result']
+        order = resp['result']
         return Order(
             self.api_id,
-            api_order['OrderUuid'],
-            'sell' if api_order['Type'] == 'LIMIT_SELL' else 'buy',
-            api_order['Exchange'],
-            api_order['Limit'],
-            api_order['Quantity'],
-            api_order['Closed'] is not None
+            order['OrderUuid'],
+            'sell' if order['Type'] == 'LIMIT_SELL' else 'buy',
+            order['Exchange'],
+            order['Limit'],
+            order['Quantity'],
+            self.order_state(order)
         )
+
+    @staticmethod
+    def order_state(order: dict) -> State:
+        print('Order:')
+        print(order)
+        is_open, canceled = order['Closed'] is None, order['CancelInitiated']
+        qty, qty_remaining = order['Quantity'], order['QuantityRemaining']
+
+        if is_open and qty == qty_remaining:
+            return State.ACTIVE
+        if not is_open and not canceled and not qty_remaining:
+            return State.EXECUTED
+        if not is_open and qty_remaining == qty:
+            return State.CANCELED
+        if not is_open and qty_remaining != qty:
+            return State.CANCELED_PARTIALLY_FILLED
+
+        raise NullOrderState(order)
 
     def get_headers_url(self, method_url, **params):
         params.update({
