@@ -25,8 +25,6 @@ class LiquiApi(BaseApi):
     api_regex = re.compile(r'\w{8}-\w{8}-\w{8}-\w{8}-\w{8}')  # A1B2C3D4-A1B2C3D4-A1B2C3D4-A1B2C3D4-A1B2C3D4
     secret_regex = re.compile(r'\w{64}')  # a78ab8f2410498e696cc6719134c62d5a852eb26070a31cb6a469b5932bf376b
 
-    attempts_limit = 5
-
     async def active_orders(self) -> [Order, ]:
         try:
             api_orders = await self._tapi(method='ActiveOrders', pair='')

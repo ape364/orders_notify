@@ -2,7 +2,11 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from enum import Enum
 
+import asyncio
 from aiohttp import ClientSession
+from logging import getLogger
+
+from exchanges.exceptions import WrongContentTypeException
 
 Order = namedtuple('Order', 'exchange_id order_id type pair price amount state')
 
@@ -29,6 +33,8 @@ class BaseApi(ABC):
     api_regex = None
     secret_regex = None
 
+    attempts_limit = 5
+
     def __init__(self, key, secret):
         self._key = key
         self._secret = secret
@@ -39,11 +45,25 @@ class BaseApi(ABC):
             resp = await s.post(url, data=data, headers=headers)
             return await resp.json()
 
-    @staticmethod
-    async def get(url: str, headers: dict = None) -> dict:
+    async def get(self, url: str, headers: dict = None) -> dict:
+        attempt, delay = 1, 1
         async with ClientSession() as s:
-            resp = await s.get(url, headers=headers)
-            return await resp.json()
+            while True:
+                try:
+                    resp = await s.get(url, headers=headers)
+                    if resp.content_type != 'application/json':
+                        raise WrongContentTypeException(
+                            f'Unexpected content type {resp.content_type!r}. URL: {url}, headers: {headers}'
+                        )
+                except WrongContentTypeException as e:
+                    getLogger().error(f'attempt {attempt}/{self.attempts_limit}, next attempt in {delay} seconds')
+                    getLogger().exception(e)
+                    attempt += 1
+                    if attempt > self.attempts_limit:
+                        return {}
+                    await asyncio.sleep(delay)
+                    delay *= 2
+                return await resp.json()
 
     @abstractmethod
     async def active_orders(self) -> [Order, ]:
