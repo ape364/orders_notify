@@ -22,7 +22,7 @@ async def run_loop():
     await bot.loop()
 
 
-@bot.command(r'/start')
+@bot.command(r'(/start|/help)')
 async def start(chat: Chat, match):
     await chat.send_text(
         'Hello! I can notify you about your closed orders on next exchanges:\n'
