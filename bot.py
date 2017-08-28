@@ -33,10 +33,18 @@ async def start(chat: Chat, match):
     )
 
 
-@bot.command(r'\/sub\s(\w+)\s(.+)\s(.+)')
+@bot.command(r'\/sub(.*)')
 async def subscribe(chat: Chat, match):
     uid = chat.sender['id']
-    exchange_name, api, secret = match.group(1), match.group(2), match.group(3)
+    data = match.group(1).strip().split(' ')
+    if not data or len(data) != 3:
+        await chat.send_text(
+            'Please specify exchange name with keys. For example:\n'
+            '`/sub bittrex a1s2d3f4g5h6j7k8l9a1s2d3f4g5h6j7 a1s2d3f4g5h6j7k8l9a1s2d3f4g5h6j7`',
+            parse_mode='Markdown'
+        )
+        return
+    exchange_name, api, secret = data
     exchange_api = get_api_by_name(exchange_name)
     if not exchange_api:
         await chat.send_text('Unsupported exchange.')
@@ -51,10 +59,16 @@ async def subscribe(chat: Chat, match):
     await chat.send_text(f'You are subscribed to {exchange_name!r}.')
 
 
-@bot.command(r'/unsub\s(\w+)')
+@bot.command(r'/unsub(.*)')
 async def unsubscribe(chat: Chat, match):
     uid = chat.sender['id']
-    exchange_name = match.group(1)
+    exchange_name = match.group(1).strip()
+    if not exchange_name:
+        await chat.send_text(
+            'Please specify exchange name. For example:\n'
+            '`/unsub bittrex`',
+            parse_mode='Markdown')
+        return
     exchange_api = get_api_by_name(exchange_name)
     if not exchange_api:
         await chat.send_text('Unsupported exchange.')
