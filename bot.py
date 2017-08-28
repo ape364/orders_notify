@@ -66,6 +66,16 @@ async def unsubscribe(chat: Chat, match):
     await chat.send_text(f'You are unsubscribed from {exchange_name!r}.')
 
 
+@bot.command(r'/subs')
+async def subscriptions(chat: Chat, match):
+    uid = chat.sender['id']
+    subs = await db.user_subscriptions(uid)
+    await chat.send_text(
+        'You are subscribed to the following exchange notifications:\n' +
+        '\n'.join(subs)
+    )
+
+
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(db.init_db())

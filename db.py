@@ -138,3 +138,15 @@ async def get_keys(uid, exchange_id):
         if not row:
             return None, None
         return row['api_key'], row['secret_key']
+
+
+async def user_subscriptions(uid):
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            '''SELECT name
+               FROM subscription
+                 JOIN exchange ON exchange.id = subscription.exchange_id
+               WHERE uid = $1 ''',
+            uid
+        )
+        return (row['name'] for row in rows)
