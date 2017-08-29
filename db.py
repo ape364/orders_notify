@@ -149,4 +149,4 @@ async def user_subscriptions(uid):
                WHERE uid = $1 ''',
             uid
         )
-        return (row['name'] for row in rows)
+        return (row['name'] for row in rows) if rows else None

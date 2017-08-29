@@ -33,6 +33,19 @@ async def start(chat: Chat, match):
     )
 
 
+@bot.command(r'/subs')
+async def subscriptions(chat: Chat, match):
+    uid = chat.sender['id']
+    subs = await db.user_subscriptions(uid)
+    if not subs:
+        await chat.send_text('You have no active subscriptions.')
+        return
+    await chat.send_text(
+        'You are subscribed to the following exchange notifications:\n' +
+        '\n'.join(subs)
+    )
+
+
 @bot.command(r'\/sub(.*)')
 async def subscribe(chat: Chat, match):
     uid = chat.sender['id']
@@ -78,16 +91,6 @@ async def unsubscribe(chat: Chat, match):
         return
     await db.unsubscribe(uid, exchange_api.api_id)
     await chat.send_text(f'You are unsubscribed from {exchange_name!r}.')
-
-
-@bot.command(r'/subs')
-async def subscriptions(chat: Chat, match):
-    uid = chat.sender['id']
-    subs = await db.user_subscriptions(uid)
-    await chat.send_text(
-        'You are subscribed to the following exchange notifications:\n' +
-        '\n'.join(subs)
-    )
 
 
 if __name__ == '__main__':
