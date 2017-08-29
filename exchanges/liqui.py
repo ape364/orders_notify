@@ -6,6 +6,8 @@ from logging import getLogger
 from time import time
 from urllib.parse import urlencode
 
+import aiohttp
+
 from exchanges.base import BaseApi, Order, State
 from exchanges.exceptions import BaseExchangeException
 
@@ -79,7 +81,7 @@ class LiquiApi(BaseApi):
                         raise NoOrdersException(data['error'])
                     raise LiquiApiException(data['error'])
                 return data.get('return', data)
-            except LiquiApiException as e:
+            except (LiquiApiException, aiohttp.client_exceptions.ClientResponseError) as e:
                 getLogger().error(f'attempt {attempt}/{self.attempts_limit}, next attempt in {delay} seconds')
                 getLogger().exception(e)
                 attempt += 1
