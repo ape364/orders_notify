@@ -23,27 +23,13 @@ class BittrexApi(BaseApi):
     api_regex = re.compile(r'\w{32}')  # a1s2d3f4g5h6j7k8l9a1s2d3f4g5h6j7
     secret_regex = re.compile(r'\w{32}')  # a1s2d3f4g5h6j7k8l9a1s2d3f4g5h6j7
 
-    async def active_orders(self) -> list:
-        method_url = 'https://bittrex.com/api/v1.1/market/getopenorders'
+    async def order_history(self):
+        method_url = 'https://bittrex.com/api/v1.1/account/getorderhistory'
         headers, url = self.get_headers_url(method_url)
         resp = await self.get(url, headers)
         if not resp['success']:
             raise BittrexApiException(resp['message'])
-        api_orders = resp['result']
-        orders = []
-        for order in api_orders:
-            orders.append(
-                Order(
-                    self.api_id,
-                    order['OrderUuid'],
-                    'sell' if order['OrderType'] == 'LIMIT_SELL' else 'buy',
-                    order['Exchange'],
-                    order['PricePerUnit'] or order['Limit'],
-                    order['Quantity'],
-                    self.order_state(order)
-                )
-            )
-        return orders
+        return {order['OrderUuid'] for order in resp['result']}
 
     async def order_info(self, order_id: str) -> dict:
         method_url = 'https://bittrex.com/api/v1.1/account/getorder'

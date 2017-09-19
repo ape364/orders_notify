@@ -58,17 +58,22 @@ async def subscribe(chat: Chat, match):
         )
         return
     exchange_name, api, secret = data
-    exchange_api = get_api_by_name(exchange_name)
-    if not exchange_api:
+    exchange_cls = get_api_by_name(exchange_name)
+    if not exchange_cls:
         await chat.send_text('Unsupported exchange.')
         return
-    if not exchange_api.check_keys(api, secret):
+    if not exchange_cls.check_keys(api, secret):
         await chat.send_text(f'Invalid format.')
         return
-    if await db.is_subscribed(uid, exchange_api.api_id):
+    if await db.is_subscribed(uid, exchange_cls.api_id):
         await chat.send_text(f'You are already subscribed to {exchange_name!r}.')
         return
-    await db.subscribe(uid, exchange_api.api_id, api, secret)
+
+    exchange_api = exchange_cls(api, secret)
+    order_history = await exchange_api.order_history()
+    await db.add_orders((uid, exchange_cls.api_id, order_id) for order_id in order_history)
+
+    await db.subscribe(uid, exchange_cls.api_id, api, secret)
     await chat.send_text(f'You are subscribed to {exchange_name!r}.')
 
 

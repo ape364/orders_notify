@@ -6,7 +6,7 @@ from aiotg import Bot
 import db
 import settings
 from exchanges import exchange_apis
-from exchanges.base import Order, state_text, State, BaseApi
+from exchanges.base import Order, state_text, BaseApi
 
 
 class OrderChecker:
@@ -23,29 +23,24 @@ class OrderChecker:
                     continue
                 api = exchange_api(api_key, secret_key)
 
-                # get user active orders from db
-                order_ids = await db.get_order_ids(exchange_id, uid)
-                for order_id in order_ids:
-                    order = await api.order_info(order_id)
-                    if State(order.state) != State.ACTIVE:
-                        state = state_text[order.state]
-                        getLogger().info(f'Order {order_id} of user {uid} at exchange {exchange_name!r} '
-                                         f'with id {exchange_id} is {state}.')
-                        await self.send_message(uid, self.format_order(api, order))
-                        await db.remove_order(uid, exchange_api.api_id, order_id)
+                db_orders = await db.get_order_ids(exchange_id, uid)
+                api_orders = await api.order_history()
 
-                # fetch new orders from api
-                active_orders = await api.active_orders()
-                new_orders_ids = set(order.order_id for order in active_orders) - order_ids
-                if not new_orders_ids:
+                new_orders = api_orders - db_orders
+
+                if not new_orders:
                     getLogger().info(f'There is no new orders of user id {uid} at exchange {exchange_name!r} '
                                      f'with id {exchange_id}.')
                     continue
-                for new_order_id in new_orders_ids:
-                    getLogger().info(f'New order {new_order_id} of user id {uid} at exchange {exchange_name!r} '
-                                     f'with id {exchange_id}.')
 
-                await db.add_orders((uid, exchange_id, order_id) for order_id in new_orders_ids)
+                await db.add_orders((uid, exchange_id, order_id) for order_id in new_orders)
+
+                for order_id in new_orders:
+                    order = await api.order_info(order_id)
+                    state = state_text[order.state]
+                    getLogger().info(f'Order {order_id} of user {uid} at exchange {exchange_name!r} '
+                                     f'with id {exchange_id} is {state}.')
+                    await self.send_message(uid, self.format_order(api, order))
 
     async def periodic(self, interval=None):
         while True:

@@ -27,24 +27,8 @@ class LiquiApi(BaseApi):
     api_regex = re.compile(r'\w{8}-\w{8}-\w{8}-\w{8}-\w{8}')  # A1B2C3D4-A1B2C3D4-A1B2C3D4-A1B2C3D4-A1B2C3D4
     secret_regex = re.compile(r'\w{64}')  # a78ab8f2410498e696cc6719134c62d5a852eb26070a31cb6a469b5932bf376b
 
-    async def active_orders(self) -> [Order, ]:
-        try:
-            api_orders = await self._tapi(method='ActiveOrders', pair='')
-            orders = []
-            for order_id, order in api_orders.items():
-                order = Order(
-                    self.api_id,
-                    order_id,
-                    order['type'],
-                    '-'.join(cur.upper() for cur in order['pair'].split('_')),
-                    order['rate'],
-                    order['amount'],
-                    self.order_state(order),
-                )
-                orders.append(order)
-            return orders
-        except NoOrdersException:
-            return []
+    async def order_history(self) -> [str, ]:
+        return {order_id for order_id in await self._tapi(method='TradeHistory')}
 
     async def order_info(self, order_id: str) -> Order:
         order = (await self._tapi(method='OrderInfo', order_id=order_id))[order_id]

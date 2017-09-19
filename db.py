@@ -25,12 +25,19 @@ async def create_tables():
         )
 
         await conn.fetch(
-            '''CREATE TABLE IF NOT EXISTS active_order(
+            '''CREATE TABLE IF NOT EXISTS user_order(
                 uid INTEGER NOT NULL,
                 exchange_id INTEGER REFERENCES exchange (id) NOT NULL,
                 order_id VARCHAR NOT NULL,
                 PRIMARY KEY (uid, exchange_id, order_id))'''
         )
+
+
+async def init_db():
+    global pool
+    pool = await asyncpg.create_pool(settings.DATABASE_URL)
+    await create_tables()
+    await insert_initial_values()
 
 
 async def insert_initial_values():
@@ -43,11 +50,16 @@ async def insert_initial_values():
         )
 
 
-async def init_db():
-    global pool
-    pool = await asyncpg.create_pool(settings.DATABASE_URL)
-    await create_tables()
-    await insert_initial_values()
+async def user_subscriptions(uid):
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            '''SELECT name
+               FROM subscription
+                 JOIN exchange ON exchange.id = subscription.exchange_id
+               WHERE uid = $1 ''',
+            uid
+        )
+        return (row['name'] for row in rows) if rows else None
 
 
 async def is_subscribed(uid: int, exchange_id: int) -> bool:
@@ -89,31 +101,17 @@ async def unsubscribe(uid, exchange_id):
 async def add_orders(orders):
     async with pool.acquire() as conn:
         await conn.executemany(
-            '''INSERT INTO active_order (uid, exchange_id, order_id) 
+            '''INSERT INTO user_order (uid, exchange_id, order_id) 
                VALUES ($1, $2, $3)
                ON CONFLICT DO NOTHING''',
             orders
         )
 
 
-async def remove_order(uid, exchange_id, order_id):
-    async with pool.acquire() as conn:
-        await conn.fetch(
-            '''DELETE FROM active_order 
-               WHERE 
-                uid = $1 AND 
-                exchange_id = $2 AND
-                order_id = $3''',
-            uid,
-            exchange_id,
-            order_id
-        )
-
-
 async def get_order_ids(exchange_id, uid):
     async with pool.acquire() as conn:
         rows = await conn.fetch(
-            '''SELECT order_id FROM active_order WHERE exchange_id = $1 AND uid = $2''',
+            '''SELECT order_id FROM user_order WHERE exchange_id = $1 AND uid = $2''',
             exchange_id,
             uid
         )
@@ -138,15 +136,3 @@ async def get_keys(uid, exchange_id):
         if not row:
             return None, None
         return row['api_key'], row['secret_key']
-
-
-async def user_subscriptions(uid):
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            '''SELECT name
-               FROM subscription
-                 JOIN exchange ON exchange.id = subscription.exchange_id
-               WHERE uid = $1 ''',
-            uid
-        )
-        return (row['name'] for row in rows) if rows else None

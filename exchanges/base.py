@@ -1,10 +1,10 @@
+import asyncio
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from enum import Enum
-
-import asyncio
-from aiohttp import ClientSession
 from logging import getLogger
+
+from aiohttp import ClientSession
 
 from exchanges.exceptions import WrongContentTypeException
 
@@ -66,8 +66,8 @@ class BaseApi(ABC):
                 return await resp.json()
 
     @abstractmethod
-    async def active_orders(self) -> [Order, ]:
-        '''Returns active orders.'''
+    async def order_history(self) -> [str, ]:
+        '''Returns user orders ids.'''
 
     @abstractmethod
     async def order_info(self, order_id: str) -> Order:
