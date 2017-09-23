@@ -16,6 +16,7 @@ class State(Enum):
     EXECUTED = 1
     CANCELED = 2
     CANCELED_PARTIALLY_FILLED = 3
+    EXPIRED = 4
 
 
 state_text = {
@@ -23,6 +24,7 @@ state_text = {
     State.EXECUTED: '✅ executed',
     State.CANCELED: '🚫 canceled',
     State.CANCELED_PARTIALLY_FILLED: '⚠️ canceled, partially filled',
+    State.EXPIRED: '⏱ expired',
 }
 
 

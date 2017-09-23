@@ -1,7 +1,8 @@
 from exchanges.bittrex import BittrexApi
+from exchanges.kraken import KrakenApi
 from exchanges.liqui import LiquiApi
 
-exchange_apis = [LiquiApi, BittrexApi]
+exchange_apis = [LiquiApi, BittrexApi, KrakenApi]
 
 
 def get_api_by_name(exchange_name):
