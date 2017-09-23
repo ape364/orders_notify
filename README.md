@@ -28,6 +28,7 @@ Example:
 
 * [Bittrex](https://bittrex.com/)
 * [Liqui](https://liqui.io/)
+* [Kraken](https://www.kraken.com/)
 
 ## Contributing
 
