@@ -28,7 +28,8 @@ class LiquiApi(BaseApi):
     secret_regex = re.compile(r'\w{64}')  # a78ab8f2410498e696cc6719134c62d5a852eb26070a31cb6a469b5932bf376b
 
     async def order_history(self) -> [str, ]:
-        return {order_id for order_id in await self._tapi(method='TradeHistory')}
+        history = await self._tapi(method='TradeHistory')
+        return {str(info['order_id']) for _, info in history.items()}
 
     async def order_info(self, order_id: str) -> Order:
         order = (await self._tapi(method='OrderInfo', order_id=order_id))[order_id]
