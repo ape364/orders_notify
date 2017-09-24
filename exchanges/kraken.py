@@ -31,7 +31,7 @@ class KrakenApi(BaseApi):
     BASE_URL = 'https://api.kraken.com'
 
     @staticmethod
-    def order_state(order: dict) -> State:
+    def _order_state(order: dict) -> State:
         if order['status'] == 'canceled' and float(order['vol_exec']) > 0:
             return State.CANCELED_PARTIALLY_FILLED
         return {
@@ -86,10 +86,10 @@ class KrakenApi(BaseApi):
             await self.parse_pair(descr['pair']),
             descr['price'],
             order['vol'],
-            self.order_state(order),
+            self._order_state(order),
         )
 
-    def get_ticker_url(self, pair):
+    def _get_ticker_url(self, pair):
         return 'https://www.kraken.com/charts'
 
     def get_headers(self, data, urlpath):

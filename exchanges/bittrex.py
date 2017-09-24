@@ -46,11 +46,11 @@ class BittrexApi(BaseApi):
             order['Exchange'],
             order['PricePerUnit'] or order['Limit'],
             order['Quantity'],
-            self.order_state(order)
+            self._order_state(order)
         )
 
     @staticmethod
-    def order_state(order: dict) -> State:
+    def _order_state(order: dict) -> State:
         is_open, canceled = order['Closed'] is None, order['CancelInitiated']
         qty, qty_remaining = order['Quantity'], order['QuantityRemaining']
 
@@ -65,7 +65,7 @@ class BittrexApi(BaseApi):
 
         raise NullOrderState(order)
 
-    def get_ticker_url(self, pair):
+    def _get_ticker_url(self, pair):
         return f'https://bittrex.com/Market/Index?MarketName={pair}'
 
     def get_headers_url(self, method_url, **params):

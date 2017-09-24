@@ -40,14 +40,14 @@ class LiquiApi(BaseApi):
             '-'.join(cur.upper() for cur in order['pair'].split('_')),
             order['rate'],
             order['start_amount'],
-            self.order_state(order),
+            self._order_state(order),
         )
 
     @staticmethod
-    def order_state(order: dict) -> State:
+    def _order_state(order: dict) -> State:
         return State(order['status'])
 
-    def get_ticker_url(self, pair):
+    def _get_ticker_url(self, pair):
         cur_from, cur_to = pair.split('-')
         return f'https://liqui.io/#/exchange/{cur_from}_{cur_to}'
 

@@ -41,6 +41,10 @@ class BaseApi(ABC):
         self._key = key
         self._secret = secret
 
+    @classmethod
+    def check_keys(cls, api: str, secret: str) -> bool:
+        return cls.api_regex.match(api) and cls.secret_regex.match(secret)
+
     @staticmethod
     async def post(url: str, headers: dict = None, data: dict = None) -> dict:
         async with ClientSession() as s:
@@ -75,15 +79,20 @@ class BaseApi(ABC):
     async def order_info(self, order_id: str) -> Order:
         '''Returns order info by order id.'''
 
-    @staticmethod
-    @abstractmethod
-    def order_state(order: dict) -> State:
-        '''Returns state of the api order.'''
+    def format_order(self, order: Order):
+        ticker_url = f'[{order.pair}]({self._get_ticker_url(order.pair)})'
+        return f'*Exchange:* {self.name}\n' \
+               f'*Pair:* {ticker_url}\n' \
+               f'*Price:* {order.price:.8f}\n' \
+               f'*Amount:* {order.amount:.8f}\n' \
+               f'*State:* {state_text[order.state]}'
 
     @abstractmethod
-    def get_ticker_url(self, pair):
+    def _get_ticker_url(self, pair):
         '''Returns exchange's ticker URL for provided pair.'''
 
-    @classmethod
-    def check_keys(cls, api: str, secret: str) -> bool:
-        return cls.api_regex.match(api) and cls.secret_regex.match(secret)
+    @staticmethod
+    @abstractmethod
+    def _order_state(order: dict) -> State:
+        '''Returns state of the api order.'''
+
