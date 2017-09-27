@@ -36,8 +36,6 @@ class BittrexApi(BaseApi):
         params = {'uuid': order_id}
         headers, url = self.get_headers_url(method_url, **params)
         resp = await self.get(url, headers)
-        if not resp['success']:
-            raise BittrexApiException(resp['message'])
         order = resp['result']
         return Order(
             self.api_id,
@@ -75,3 +73,7 @@ class BittrexApi(BaseApi):
         })
         url = f'{method_url}?{urlencode(params)}'
         return {'apisign': hmac.new(self._secret.encode(), url.encode(), hashlib.sha512).hexdigest()}, url
+
+    def _raise_if_error(self, response: dict):
+        if not response['success']:
+            raise BittrexApiException(response['message'])

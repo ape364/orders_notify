@@ -4,9 +4,10 @@ from collections import namedtuple
 from enum import Enum
 from logging import getLogger
 
+import aiohttp
 from aiohttp import ClientSession
 
-from exchanges.exceptions import WrongContentTypeException
+from exchanges.exceptions import WrongContentTypeException, BaseExchangeException, InvalidResponseException
 
 Order = namedtuple('Order', 'exchange_id order_id type pair price amount state')
 
@@ -45,31 +46,32 @@ class BaseApi(ABC):
     def check_keys(cls, api: str, secret: str) -> bool:
         return cls.api_regex.match(api) and cls.secret_regex.match(secret)
 
-    @staticmethod
-    async def post(url: str, headers: dict = None, data: dict = None) -> dict:
-        async with ClientSession() as s:
-            resp = await s.post(url, data=data, headers=headers)
-            return await resp.json()
-
-    async def get(self, url: str, headers: dict = None) -> dict:
+    async def request(self, url, headers, method='get', data=None):
         attempt, delay = 1, 1
         async with ClientSession() as s:
+            session_method = s.__getattribute__(method.lower())
             while True:
                 try:
-                    resp = await s.get(url, headers=headers)
+                    resp = await session_method(url=url, headers=headers, data=data)
                     if resp.content_type != 'application/json':
-                        raise WrongContentTypeException(
-                            f'Unexpected content type {resp.content_type!r}. URL: {url}, headers: {headers}'
-                        )
-                except WrongContentTypeException as e:
-                    getLogger().error(f'attempt {attempt}/{self.attempts_limit}, next attempt in {delay} seconds')
+                        raise WrongContentTypeException(f'Unexpected content type {resp.content_type!r} at URL {url}.')
+                    json_resp = await resp.json()
+                    self._raise_if_error(json_resp)
+                    return json_resp
+                except (aiohttp.client_exceptions.ClientResponseError, BaseExchangeException) as e:
+                    getLogger().error(f'attempt {attempt}/{self.attempts_limit}, next in {delay} seconds...')
                     getLogger().exception(e)
                     attempt += 1
                     if attempt > self.attempts_limit:
-                        return {}
+                        raise InvalidResponseException(e)
                     await asyncio.sleep(delay)
                     delay *= 2
-                return await resp.json()
+
+    async def post(self, url: str, headers: dict = None, data: dict = None) -> dict:
+        return await self.request(url, headers, 'post', data)
+
+    async def get(self, url: str, headers: dict = None) -> dict:
+        return await self.request(url, headers)
 
     @abstractmethod
     async def order_history(self) -> [str, ]:
@@ -96,3 +98,8 @@ class BaseApi(ABC):
     def _order_state(order: dict) -> State:
         '''Returns state of the api order.'''
 
+    @abstractmethod
+    def _raise_if_error(self, response: dict) -> bool:
+        '''Raises BaseExchangeException if there is an errors in API response.
+        :raises BaseExchangeException:
+        '''

@@ -1,12 +1,8 @@
-import asyncio
 import hashlib
 import hmac
 import re
-from logging import getLogger
 from time import time
 from urllib.parse import urlencode
-
-import aiohttp
 
 from exchanges.base import BaseApi, Order, State
 from exchanges.exceptions import BaseExchangeException
@@ -52,30 +48,21 @@ class LiquiApi(BaseApi):
         return f'https://liqui.io/#/exchange/{cur_from}_{cur_to}'
 
     async def _tapi(self, **params):
-        attempt, delay = 1, 1
-        while True:
-            try:
-                params['nonce'] = int(time())
-                data = await self.post(
-                    'https://api.liqui.io/tapi',
-                    headers={'Key': self._key, 'Sign': self._sign(params)},
-                    data=params
-                )
-                if 'error' in data:
-                    if data['error'] == 'no orders':
-                        raise NoOrdersException(data['error'])
-                    raise LiquiApiException(data['error'])
-                return data.get('return', data)
-            except (LiquiApiException, aiohttp.client_exceptions.ClientResponseError) as e:
-                getLogger().error(f'attempt {attempt}/{self.attempts_limit}, next attempt in {delay} seconds')
-                getLogger().exception(e)
-                attempt += 1
-                if attempt > self.attempts_limit:
-                    return {}
-                await asyncio.sleep(delay)
-                delay *= 2
+        params['nonce'] = int(time())
+        resp = await self.post(
+            'https://api.liqui.io/tapi',
+            headers={'Key': self._key, 'Sign': self._sign(params)},
+            data=params
+        )
+        return resp.get('return', resp)
 
     def _sign(self, data):
         if isinstance(data, dict):
             data = urlencode(data)
         return hmac.new(self._secret.encode(), data.encode(), hashlib.sha512).hexdigest()
+
+    def _raise_if_error(self, response: dict):
+        if 'error' in response:
+            if response['error'] == 'no orders':
+                raise NoOrdersException(response['error'])
+            raise LiquiApiException(response['error'])

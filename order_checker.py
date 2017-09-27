@@ -7,6 +7,7 @@ import db
 import settings
 from exchanges import exchange_apis
 from exchanges.base import state_text
+from exchanges.exceptions import BaseExchangeException
 
 
 class OrderChecker:
@@ -24,7 +25,12 @@ class OrderChecker:
                 api = exchange_api(api_key, secret_key)
 
                 db_orders = await db.get_order_ids(exchange_id, uid)
-                api_orders = await api.order_history()
+                try:
+                    api_orders = await api.order_history()
+                except BaseExchangeException as e:
+                    getLogger().error(f'Error while parsing exchange {exchange_name!r} of user id {uid}, skipping...')
+                    getLogger().exception(e)
+                    continue
 
                 new_orders = api_orders - db_orders
 
@@ -36,7 +42,15 @@ class OrderChecker:
                 await db.add_orders((uid, exchange_id, order_id) for order_id in new_orders)
 
                 for order_id in new_orders:
-                    order = await api.order_info(order_id)
+                    try:
+                        order = await api.order_info(order_id)
+                    except BaseExchangeException as e:
+                        getLogger().error(
+                            f'Error while fetching order {order_id!r} of user id {uid} '
+                            f'at exchange {exchange_name!r}, skipping...'
+                        )
+                        getLogger().exception(e)
+                        continue
                     state = state_text[order.state]
                     getLogger().info(f'Order {order_id} of user {uid} at exchange {exchange_name!r} '
                                      f'with id {exchange_id} is {state}.')

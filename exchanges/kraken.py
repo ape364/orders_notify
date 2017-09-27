@@ -54,8 +54,6 @@ class KrakenApi(BaseApi):
         }
 
         resp = await self.post(self.BASE_URL + method_url, headers, data)
-        if resp['error']:
-            raise KrakenApiException('\n'.join(resp['error']))
 
         return {order_id for order_id in resp['result']['closed']}
 
@@ -73,8 +71,6 @@ class KrakenApi(BaseApi):
         }
 
         resp = await self.post(self.BASE_URL + method_url, headers, data)
-        if resp['error']:
-            raise KrakenApiException('\n'.join(resp['error']))
 
         order = resp['result'][order_id]
         descr = order['descr']
@@ -121,3 +117,7 @@ class KrakenApi(BaseApi):
             raise AmbiguousResultException(f'More than 1 result to pair {pair}: {pairs}')
         _, pair_info = result.popitem()
         return f"{pair_info['base']}-{pair_info['quote']}"
+
+    def _raise_if_error(self, response: dict) -> bool:
+        if response['error']:
+            raise KrakenApiException('\n'.join(response['error']))
