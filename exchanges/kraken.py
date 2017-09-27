@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import re
 import urllib
+from logging import getLogger
 from time import time
 
 from exchanges.base import BaseApi, Order, State
@@ -10,14 +11,6 @@ from exchanges.exceptions import BaseExchangeException
 
 
 class KrakenApiException(BaseExchangeException):
-    pass
-
-
-class AmbiguousResultException(KrakenApiException):
-    pass
-
-
-class UnknownPairException(KrakenApiException):
     pass
 
 
@@ -43,33 +36,14 @@ class KrakenApi(BaseApi):
 
     async def order_history(self) -> [str, ]:
         method_url = '/0/private/ClosedOrders'
-
-        data = {
-            'nonce': int(time() * 1000)
-        }
-
-        headers = {
-            'API-Key': self._key,
-            'API-Sign': self._sign(data, method_url)
-        }
-
+        data, headers = self._get_headers(method_url)
         resp = await self.post(self.BASE_URL + method_url, headers, data)
 
         return {order_id for order_id in resp['result']['closed']}
 
     async def order_info(self, order_id: str) -> Order:
         method_url = '/0/private/QueryOrders'
-
-        data = {
-            'nonce': int(time() * 1000),
-            'txid': order_id
-        }
-
-        headers = {
-            'API-Key': self._key,
-            'API-Sign': self._sign(data, method_url)
-        }
-
+        data, headers = self._get_headers(method_url, {'txid': order_id})
         resp = await self.post(self.BASE_URL + method_url, headers, data)
 
         order = resp['result'][order_id]
@@ -79,17 +53,20 @@ class KrakenApi(BaseApi):
             self.api_id,
             order_id,
             descr['type'],
-            await self.parse_pair(descr['pair']),
+            await self._parse_pair(descr['pair']),
             descr['price'],
             order['vol'],
             self._order_state(order),
         )
 
     def _get_ticker_url(self, pair):
-        return 'https://www.kraken.com/charts'
+        return 'https://www.kraken.com/charts'  # there is no more exact link ¯\_(ツ)_/¯
 
-    def get_headers(self, data, urlpath):
-        return {
+    def _get_headers(self, urlpath, data=None):
+        if not data:
+            data = {}
+        data.update({'nonce': int(time() * 1000)})
+        return data, {
             'API-Key': self._key,
             'API-Sign': self._sign(data, urlpath)
         }
@@ -106,15 +83,14 @@ class KrakenApi(BaseApi):
 
         return sigdigest.decode()
 
-    async def parse_pair(self, pair):
+    async def _parse_pair(self, pair):
         url = f'https://api.kraken.com/0/public/AssetPairs?pair={pair}'
         resp = await self.get(url)
-        if resp['error']:
-            raise KrakenApiException('\n'.join(resp['error']))
         result = resp['result']
         if len(result) > 1:
             pairs = ','.join(result.keys())
-            raise AmbiguousResultException(f'More than 1 result to pair {pair}: {pairs}')
+            getLogger().error(f'More than 1 result to pair {pair}: {pairs}')
+            return pair
         _, pair_info = result.popitem()
         return f"{pair_info['base']}-{pair_info['quote']}"
 
