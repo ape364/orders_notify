@@ -94,6 +94,6 @@ class KrakenApi(BaseApi):
         _, pair_info = result.popitem()
         return f"{pair_info['base']}-{pair_info['quote']}"
 
-    def _raise_if_error(self, response: dict) -> bool:
+    def _raise_if_error(self, response: dict):
         if response['error']:
             raise KrakenApiException('\n'.join(response['error']))

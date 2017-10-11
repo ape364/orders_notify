@@ -98,7 +98,7 @@ class BaseApi(ABC):
         '''Returns state of the api order.'''
 
     @abstractmethod
-    def _raise_if_error(self, response: dict) -> bool:
+    def _raise_if_error(self, response: dict):
         '''Raises BaseExchangeException if there is an errors in API response.
         :raises BaseExchangeException:
         '''
