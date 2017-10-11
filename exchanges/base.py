@@ -8,6 +8,7 @@ import aiohttp
 from aiohttp import ClientSession
 
 from exchanges.exceptions import WrongContentTypeException, BaseExchangeException, InvalidResponseException
+from settings import REQUEST_ATTEMPTS_LIMIT
 
 Order = namedtuple('Order', 'exchange_id order_id type pair price amount state')
 
@@ -36,8 +37,6 @@ class BaseApi(ABC):
     api_regex = None
     secret_regex = None
 
-    attempts_limit = 5
-
     def __init__(self, key, secret):
         self._key = key
         self._secret = secret
@@ -59,10 +58,10 @@ class BaseApi(ABC):
                     self._raise_if_error(json_resp)
                     return json_resp
                 except (aiohttp.client_exceptions.ClientResponseError, BaseExchangeException) as e:
-                    getLogger().error(f'attempt {attempt}/{self.attempts_limit}, next in {delay} seconds...')
+                    getLogger().error(f'attempt {attempt}/{REQUEST_ATTEMPTS_LIMIT}, next in {delay} seconds...')
                     getLogger().exception(e)
                     attempt += 1
-                    if attempt > self.attempts_limit:
+                    if attempt > REQUEST_ATTEMPTS_LIMIT:
                         raise InvalidResponseException(e)
                     await asyncio.sleep(delay)
                     delay *= 2
