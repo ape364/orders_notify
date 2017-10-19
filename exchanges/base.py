@@ -84,6 +84,7 @@ class BaseApi(ABC):
         ticker_url = f'[{order.pair}]({self._get_ticker_url(order.pair)})'
         return f'*Exchange:* {self.name}\n' \
                f'*Pair:* {ticker_url}\n' \
+               f'*Type:* {order.type}\n' \
                f'*Price:* {order.price:.8f}\n' \
                f'*Amount:* {order.amount:.8f}\n' \
                f'*State:* {state_text[order.state]}'
